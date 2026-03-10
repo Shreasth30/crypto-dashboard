@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "system-ui", "sans-serif";
+  --color-crypto-dark: #0f172a;
+  /* slate-900 */
+  --color-crypto-card: rgba(30, 41, 59, 0.4);
+  /* slate-800 with opacity */
+  --color-crypto-border: rgba(255, 255, 255, 0.1);
+  --color-crypto-glow: rgba(6, 182, 212, 0.3);
+  /* cyan glow */
+}
+
+@layer base {
+  body {
+    @apply bg-crypto-dark text-slate-100 font-sans antialiased min-h-screen;
+    background-image:
+      radial-gradient(circle at 15% 50%, rgba(14, 165, 233, 0.08), transparent 25%),
+      radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08), transparent 25%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-crypto-card backdrop-blur-xl border border-crypto-border rounded-2xl shadow-lg;
+  }
+
+  .glass-panel-interactive {
+    @apply bg-crypto-card backdrop-blur-xl border border-crypto-border rounded-2xl shadow-lg transition-all duration-300 hover:shadow-[0_0_15px_var(--color-crypto-glow)] hover:-translate-y-1;
+  }
+
+  /* Custom Scrollbar for sleek look */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-500;
+  }
+}
