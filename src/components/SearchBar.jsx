@@ -8,6 +8,7 @@ export default function SearchBar({ data, onSelectCoin }) {
     const [results, setResults] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef(null);
+    const inputRef = useRef(null);
     const { symbol } = useCurrency();
 
     useEffect(() => {
@@ -18,6 +19,19 @@ export default function SearchBar({ data, onSelectCoin }) {
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || e.key === '/') {
+                if (document.activeElement !== inputRef.current) {
+                    e.preventDefault();
+                    inputRef.current?.focus();
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
     useEffect(() => {
@@ -47,16 +61,22 @@ export default function SearchBar({ data, onSelectCoin }) {
         <div ref={wrapperRef} className="relative w-full md:w-64 z-50">
             <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search size={16} className="text-slate-400 group-focus-within:text-cyan-400 transition-colors" />
+                    <Search size={14} className="text-slate-400 group-focus-within:text-cyan-400 transition-colors" />
                 </div>
                 <input
+                    ref={inputRef}
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => { if (results.length > 0) setIsOpen(true); }}
-                    placeholder="Search coins..."
-                    className="w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all placeholder-slate-500"
+                    placeholder="Search assets..."
+                    className="w-full bg-slate-900/50 border border-slate-700/80 rounded-xl pl-9 pr-12 py-1.5 text-xs focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all placeholder-slate-500 font-medium"
                 />
+                <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                    <kbd className="hidden sm:inline-flex items-center gap-0.5 bg-slate-800/80 px-1.5 py-0.5 rounded text-[10px] font-semibold text-slate-400 border border-slate-700 font-numeric">
+                        <span>/</span>
+                    </kbd>
+                </div>
             </div>
 
             <AnimatePresence>
@@ -72,7 +92,7 @@ export default function SearchBar({ data, onSelectCoin }) {
                             <div
                                 key={coin.id}
                                 onClick={() => handleSelect(coin)}
-                                className="flex items-center justify-between px-4 py-2 hover:bg-white/10 cursor-pointer transition-colors"
+                                className="flex items-center justify-between px-4 py-2 hover:bg-slate-800/60 cursor-pointer transition-colors"
                             >
                                 <div className="flex items-center gap-3">
                                     <img src={coin.image} alt={coin.name} className="w-6 h-6 rounded-full" />

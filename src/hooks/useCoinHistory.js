@@ -1,9 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
+const EXCHANGE_RATES = {
+    usd: 1,
+    eur: 0.92,
+    inr: 83.3
+};
 
 export function useCoinHistory(coinId, currency, days, sparklineData) {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const fetchedCurrencyRef = useRef(currency);
 
     useEffect(() => {
         if (!coinId) return;
@@ -21,6 +28,7 @@ export function useCoinHistory(coinId, currency, days, sparklineData) {
             setData(formattedData);
             setLoading(false);
             setError(null);
+            fetchedCurrencyRef.current = currency;
             return;
         }
 
@@ -32,7 +40,7 @@ export function useCoinHistory(coinId, currency, days, sparklineData) {
             try {
                 const apiUrl = import.meta.env.VITE_COINGECKO_API_URL || 'https://api.coingecko.com/api/v3';
                 const res = await fetch(`${apiUrl}/coins/${coinId}/market_chart?vs_currency=${currency}&days=${days}`);
-                if (!res.ok) throw new Error('Failed to fetch historical data (API Rate Limit likely). Try a different timeframe later.');
+                if (!res.ok) throw new Error('Getting latest data for best result');
 
                 const json = await res.json();
 
@@ -42,9 +50,22 @@ export function useCoinHistory(coinId, currency, days, sparklineData) {
                         price: price,
                     }));
                     setData(formattedData);
+                    fetchedCurrencyRef.current = currency;
                 }
             } catch (err) {
-                if (isMounted) setError(err.message);
+                if (isMounted) {
+                    setError('Getting latest data for best result');
+                    if (data && data.length > 0 && fetchedCurrencyRef.current !== currency) {
+                        const fromRate = EXCHANGE_RATES[fetchedCurrencyRef.current] || 1;
+                        const toRate = EXCHANGE_RATES[currency] || 1;
+                        const multiplier = toRate / fromRate;
+                        setData(prev => prev.map(item => ({
+                            ...item,
+                            price: item.price * multiplier
+                        })));
+                        fetchedCurrencyRef.current = currency;
+                    }
+                }
             } finally {
                 if (isMounted) setLoading(false);
             }
