@@ -1,6 +1,34 @@
 import { useState, useEffect, useRef } from 'react';
 
 // Cache for previous prices to determine flash color
+const EXCHANGE_RATES = {
+    usd: 1,
+    eur: 0.92,
+    inr: 83.3
+};
+
+const convertData = (dataList, from, to) => {
+    if (from === to || !dataList || dataList.length === 0) return dataList;
+    const fromRate = EXCHANGE_RATES[from] || 1;
+    const toRate = EXCHANGE_RATES[to] || 1;
+    const multiplier = toRate / fromRate;
+
+    return dataList.map(coin => ({
+        ...coin,
+        current_price: coin.current_price * multiplier,
+        market_cap: coin.market_cap * multiplier,
+        total_volume: coin.total_volume * multiplier,
+        high_24h: coin.high_24h ? coin.high_24h * multiplier : coin.high_24h,
+        low_24h: coin.low_24h ? coin.low_24h * multiplier : coin.low_24h,
+        ath: coin.ath ? coin.ath * multiplier : coin.ath,
+        atl: coin.atl ? coin.atl * multiplier : coin.atl,
+        sparkline_in_7d: coin.sparkline_in_7d ? {
+            ...coin.sparkline_in_7d,
+            price: coin.sparkline_in_7d.price ? coin.sparkline_in_7d.price.map(p => p * multiplier) : []
+        } : coin.sparkline_in_7d
+    }));
+};
+
 export function useCryptoData(currency) {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -8,6 +36,7 @@ export function useCryptoData(currency) {
 
     // Keep track of previous prices: { coinId: number }
     const prevPricesRef = useRef({});
+    const fetchedCurrencyRef = useRef('usd');
 
     const fetchData = async () => {
         try {
@@ -23,7 +52,7 @@ export function useCryptoData(currency) {
             clearTimeout(timeoutId);
 
             if (!res.ok) {
-                throw new Error('Failed to fetch data');
+                throw new Error('Getting latest data for best result');
             }
 
             const jsonData = await res.json();
@@ -41,12 +70,19 @@ export function useCryptoData(currency) {
             });
 
             prevPricesRef.current = newPrevPrices;
+            fetchedCurrencyRef.current = currency;
 
             setData(jsonData);
             setError(null);
         } catch (err) {
             if (err.name !== 'AbortError') {
-                setError(err.message);
+                setError('Getting latest data for best result');
+                // Client-side fallback conversion
+                if (data && data.length > 0 && fetchedCurrencyRef.current !== currency) {
+                    const converted = convertData(data, fetchedCurrencyRef.current, currency);
+                    setData(converted);
+                    fetchedCurrencyRef.current = currency;
+                }
             }
         } finally {
             setLoading(false);
